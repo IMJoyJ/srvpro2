@@ -2,9 +2,10 @@
 const Struct = require('./struct.js').Struct;
 const fs = require("fs");
 const _ = require("underscore");
+const YAML = require("yaml");
 
-function loadJSON(path) {
-	return JSON.parse(fs.readFileSync(path, "utf8"));
+function loadYAML(path) {
+	return YAML.parse(fs.readFileSync(path, "utf8"));
 }
 
 class Handler {
@@ -32,10 +33,11 @@ class YGOProMessagesHelper {
 	}
 
 	initDatas() {
-		this.structs_declaration = loadJSON('./data/structs.json');
-		this.typedefs =  loadJSON('./data/typedefs.json');
-		this.proto_structs = loadJSON('./data/proto_structs.json');
-		this.constants = loadJSON('./data/constants.json');
+		const ygoproDatas = loadYAML('./datas/ygopro-datas.yaml')
+		this.structs_declaration = ygoproDatas.structs_declaration;
+		this.typedefs =  ygoproDatas.typedefs;
+		this.proto_structs = ygoproDatas.proto_structs;
+		this.constants = ygoproDatas.constants;
 	}
 
 	initStructs() {

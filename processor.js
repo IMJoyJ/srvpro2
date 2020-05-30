@@ -1,8 +1,8 @@
 const cluster = require("cluster");
 const os = require("os");
 
-class Task { 
-	constructor(id, proto, param, callback, worker) { 
+class Task {
+	constructor(id, proto, param, callback, worker) {
 		this.id = id;
 		this.callback = callback;
 		this.solved = false;
@@ -13,12 +13,12 @@ class Task {
 		}
 		if (cluster.isMaster && worker) {
 			worker.send(sendData);
-		} else { 
+		} else {
 			process.send(sendData);
 		}
 	}
-	solve(ret) { 
-		if (this.solved) { 
+	solve(ret) {
+		if (this.solved) {
 			return;
 		}
 		this.solved = true;
@@ -28,22 +28,27 @@ class Task {
 
 let curID = 0;
 
-class Processor { 
-	constructor(nproc) { 
+class Processor {
+	constructor(nproc) {
 		this.queue = [];
 		this.handlers = {};
 		this.nproc = nproc;
 		if (cluster.isMaster) {
-			for (let i = 1; i < nproc; ++i) { 
-				cluster.fork();
-			}
-			cluster.on("message", this.masterHandler);
-		} else { 
-			process.on("message", this.workerHandler);
+			cluster.on("message", this.masterHandler(this));
+		} else {
+			process.on("message", this.workerHandler(this));
 		}
 	}
 
-	addHandler(proto, handler) { 
+	startWorkers() {
+		if (cluster.isMaster) {
+			for (let i = 0; i < this.nproc; ++i) {
+				cluster.fork();
+			}
+		}
+	}
+
+	addHandler(proto, handler) {
 		this.handlers[proto] = handler;
 	}
 
@@ -55,40 +60,47 @@ class Processor {
 		}
 	}
 
-	async masterHandler(worker, data) { 
-		if (data.proto === "solve") {
-			solveTask(data);
-		} else if(this.handlers[data.proto]) {
-			const handler = this.handlers[data.proto];
-			const ret = await handler(data.param);
-			worker.send({
-				id: data.id,
-				proto: "solve",
-				param: ret
-			});
-		 }
-	}
-
-	async workerHandler(data) { 
-		if (data.proto === "solve") {
-			solveTask(data);
-		} else if(this.handlers[data.proto]) {
-			const handler = this.handlers[data.proto];
-			const ret = await handler(data.param);
-			process.send({
-				id: data.id,
-				proto: "solve",
-				param: ret
-			});
-		 }
-	}
-
-	addTask(proto, param, targetWorker) { 
-		return new Promise(callback => {
-			if (!targetWorker) { 
-				targetWorker = curID % this.nproc;
+	masterHandler(_this) {
+		return (async (worker, data) => {
+			if (data.proto === "solve") {
+				_this.solveTask(data);
+			} else if (_this.handlers[data.proto]) {
+				const handler = _this.handlers[data.proto];
+				const ret = await handler(data.param, data.id, worker.id);
+				worker.send({
+					id: data.id,
+					proto: "solve",
+					param: ret
+				});
 			}
-			const worker = cluster.workers[targetWorker];
+		});
+	}
+
+	workerHandler(_this) {
+		return (async (data) => {
+			if (data.proto === "solve") {
+				_this.solveTask(data);
+			} else if (_this.handlers[data.proto]) {
+				const handler = _this.handlers[data.proto];
+				const ret = await handler(data.param, data.id);
+				process.send({
+					id: data.id,
+					proto: "solve",
+					param: ret
+				});
+			}
+		});
+	}
+
+	addTask(proto, param, targetWorker) {
+		return new Promise(callback => {
+			let worker = null;
+			if (cluster.isMaster) {
+				if (!targetWorker) {
+					targetWorker = curID % this.nproc;
+				}
+				worker = cluster.workers[targetWorker]
+			}
 			const task = new Task(++curID, proto, param, callback, worker);
 			this.queue.push(task);
 		});
