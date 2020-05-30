@@ -1,0 +1,29 @@
+{
+  "name": "srvpro2",
+  "version": "5.7.3",
+  "description": "Next generation of SRVPro",
+  "main": "server.js",
+  "scripts": {
+    "start": "node ygopro-server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/purerosefallen/srvpro2.git"
+  },
+  "keywords": [
+    "ygopro",
+    "srvpro"
+  ],
+  "author": "Nanahira",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/purerosefallen/srvpro2/issues"
+  },
+  "homepage": "https://github.com/purerosefallen/srvpro2#readme",
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "deepmerge": "^4.2.2",
+    "load-json-file": "^6.2.0",
+    "underscore": "^1.10.2"
+  }
+}
