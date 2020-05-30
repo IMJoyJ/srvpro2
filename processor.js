@@ -48,9 +48,9 @@ class Processor {
 					callback();
 				}
 			});
-			cluster.on("message", this.masterHandler(this));
+			cluster.on("message", Processor.masterHandler(this));
 		} else {
-			process.on("message", this.workerHandler(this));
+			process.on("message", Processor.workerHandler(this));
 		}
 	}
 
@@ -80,7 +80,7 @@ class Processor {
 		}
 	}
 
-	masterHandler(_this) {
+	static masterHandler(_this) {
 		return (async (worker, data) => {
 			if (data.proto === "solve") {
 				_this.solveTask(data);
@@ -96,7 +96,7 @@ class Processor {
 		});
 	}
 
-	workerHandler(_this) {
+	static workerHandler(_this) {
 		return (async (data) => {
 			if (data.proto === "solve") {
 				_this.solveTask(data);
