@@ -113,6 +113,7 @@ async function main() {
 	}
 	processor = global.Processor = new Processor(settings.nproc);
 	loadHandlers();
-	processor.startWorkers();
+	await processor.startWorkers();
+	console.log(await processor.addTask("get_memory_usage"));
 }
 module.exports = main;

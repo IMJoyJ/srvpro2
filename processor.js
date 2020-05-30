@@ -28,23 +28,43 @@ class Task {
 
 let curID = 0;
 
+async function sleep(ms) { 
+	return new Promise(callback => { 
+		setTimeout(callback, ms);
+	})
+}
+
 class Processor {
 	constructor(nproc) {
 		this.queue = [];
 		this.handlers = {};
 		this.nproc = nproc;
 		if (cluster.isMaster) {
+			this.workerReadyCallbacks = {};
+			this.addHandler("ready", async (param, dataID, workerID) => {
+				const callback = this.workerReadyCallbacks[workerID];
+				if (callback) {
+					log.info("Worker started:", workerID);
+					callback();
+				}
+			});
 			cluster.on("message", this.masterHandler(this));
 		} else {
 			process.on("message", this.workerHandler(this));
 		}
 	}
 
-	startWorkers() {
+	async startWorkers() {
 		if (cluster.isMaster) {
+			let readyPromises = [];
 			for (let i = 0; i < this.nproc; ++i) {
-				cluster.fork();
+				readyPromises.push(new Promise(callback => {
+					const worker = cluster.fork();
+					const ID = worker.id;
+					this.workerReadyCallbacks[ID] = callback;
+				}));
 			}
+			await Promise.all(readyPromises);
 		}
 	}
 
@@ -97,7 +117,7 @@ class Processor {
 			let worker = null;
 			if (cluster.isMaster) {
 				if (!targetWorker) {
-					targetWorker = curID % this.nproc;
+					targetWorker = Object.keys(cluster.workers)[curID % this.nproc];
 				}
 				worker = cluster.workers[targetWorker]
 			}
