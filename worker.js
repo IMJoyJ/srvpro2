@@ -7,6 +7,7 @@ const Player = require("./player.js");
 const cluster = require("cluster");
 
 let settings, processor, lflists;
+let processes = [];
 function loadHandlers() {
 	processor.addHandler("get_memory_usage", async (param, dataID) => {
 		const memStdout = (await exec("free")).stdout;

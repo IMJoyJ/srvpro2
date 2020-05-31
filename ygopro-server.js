@@ -1,12 +1,12 @@
 const _ = require('underscore');
 _.str = require('underscore.string');
 _.mixin(_.str.exports());
-const bunyan = global.bunyan = require("bunyan");
+const bunyan = require("bunyan");
 const cluster = require("cluster");
 const log = global.log = bunyan.createLogger({
 	name: `SRVPro2${cluster.isMaster ? "" : " worker " + cluster.worker.id}`
 });
-const moment = global.moment = require('moment');
+const moment = require('moment');
 
 moment.updateLocale('zh-cn', {
 	relativeTime: {

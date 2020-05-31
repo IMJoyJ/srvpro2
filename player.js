@@ -1,5 +1,6 @@
 const net = require("net");
 const YGOProMessagesHelper = require("./YGOProMessages.js");
+const _ = require("underscore");
 class Player {
 	constructor(client, worker) {
 		this.client = client;
