@@ -27,7 +27,7 @@ class Room {
 			this.data.hostinfo.start_hand = parseInt(param[7]);
 			this.data.hostinfo.draw_count = parseInt(param[8]);
 		} else if ((param = name.match(/(.+)#/)) !== null) {
-			rule = param[1].toUpperCase();
+			const rule = param[1].toUpperCase();
 			if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/)) {
 				this.data.hostinfo.mode = 1;
 			}
@@ -49,7 +49,7 @@ class Room {
 				this.data.hostinfo.rule = 2;
 			}
 			if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
-				start_lp = parseInt(param[2]);
+				const start_lp = parseInt(param[2]);
 				if (start_lp <= 0) {
 					start_lp = 1;
 				}
@@ -58,6 +58,7 @@ class Room {
 				}
 				this.data.hostinfo.start_lp = start_lp;
 			}
+			let param;
 			if ((param = rule.match(/(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/))) {
 				time_limit = parseInt(param[3]);
 				if (time_limit < 0) {
