@@ -43,6 +43,24 @@ class Player {
 			this.server.destroy();
 		}
 	}
+	async serverConnectTo(host, port) {
+		let check = false;
+		await new Promise(done => {
+			this.server.connect({
+				port,
+				host,
+			}, () => {
+				if (!check) {
+					check = true;
+					done();
+				}
+			});
+		});
+		for (let buffer of this.preEstablishedBuffers) {
+			this.server.write(buffer);
+		}
+		this.preEstablishedBuffers = [];
+	}
 	static clientCloseHandler(client) {
 		return async (error) => {
 			const player = client.player;

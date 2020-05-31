@@ -31,7 +31,10 @@ function loadHandlers() {
 		return percentUsed;
 	});
 	processor.addHandler("launch_ygopro", (param, dataID) => {
-		const { params, roomID } = param;
+		const {
+			params,
+			roomID
+		} = param;
 		const workerID = cluster.worker.id;
 		const connectionHost = '127.0.0.1';
 		return new Promise(callback => {
@@ -65,7 +68,7 @@ function loadHandlers() {
 				});
 			});
 			spawnProcess.stderr.setEncoding("utf8");
-			spawnProcess.stderr.on("data", async(data) => {
+			spawnProcess.stderr.on("data", async (data) => {
 				data = "Debug: " + data;
 				data = data.replace(/\n$/, "");
 				log.info("YGOPRO " + data);
@@ -75,6 +78,15 @@ function loadHandlers() {
 				});
 			});
 		});
+	});
+	processor.addHandler("connect_to_server", (param, dataID) => {
+		const player = Player.all[param.player];
+		if (!player) {
+			return;
+		}
+		const host = param.host;
+		const port = param.port;
+		await player.serverConnectTo(host, port);
 	});
 }
 

@@ -126,7 +126,16 @@ class Room {
 		}
 	}
 	async launch() {
-		const { workerID, success, processID, connectionHost, connectionPort } = await processor.addTask("launch_ygopro", {params: this.data.launchParam, roomID: this.data.id});
+		const {
+			workerID,
+			success,
+			processID,
+			connectionHost,
+			connectionPort
+		} = await processor.addTask("launch_ygopro", {
+			params: this.data.launchParam,
+			roomID: this.data.id
+		});
 		if (!success) {
 			this.delete();
 			return false;
@@ -136,6 +145,13 @@ class Room {
 		this.data.connectionHost = connectionHost;
 		this.data.connectionPort = connectionPort;
 		this.established = true;
+		for (let player in this.data.players) {
+			await processor.addTask("connect_to_server", {
+				player: player.id,
+				host: connectionHost,
+				port: connectionPort
+			}, player.workerID);
+		}
 		return true;
 	}
 	static getSeedTimet(count) {
@@ -159,6 +175,16 @@ class Room {
 			return a - b;
 		});
 		return ret;
+	}
+	async connect(player) {
+		this.data.players.push(player);
+		if (this.data.established) {
+			await processor.addTask("connect_to_server", {
+				player: player.id,
+				host: this.data.connectionHost,
+				port: this.data.connectionPort
+			}, player.workerID);
+		}
 	}
 }
 Room.prototype.data = {
