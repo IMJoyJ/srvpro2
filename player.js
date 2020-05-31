@@ -122,9 +122,9 @@ class Player {
 			};
 			if (player.data.isPostWatcher) {
 				const {
-					buffers,
+					datas,
 					feedback
-				} = await Player.ygoproForPostWatcher.handleBuffer(buffer, "CTOS", ["CHAT"], param);
+				} = await Player.ygopro.handleBuffer(buffer, "CTOS", ["CHAT"], param);
 				if (feedback) {
 					log.warn(feedback.message, player.data.name, player.data.ip);
 					const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
@@ -134,7 +134,7 @@ class Player {
 						return;
 					}
 				}
-				for (let b of buffers) {
+				for (let b of datas) {
 					await processor.addTask("post_watcher_message", {
 						player: player.data,
 						message: b.toString("base64")
@@ -144,7 +144,7 @@ class Player {
 			}
 			const protoFilter = player.data.preReconnecting ? ["UPDATE_DECK"] : null;
 			const {
-				buffers,
+				datas,
 				feedback
 			} = await Player.ygopro.handleBuffer(buffer, "CTOS", protoFilter, param);
 			if (feedback) {
@@ -157,11 +157,11 @@ class Player {
 				}
 			}
 			if (player.server && player.data.established) {
-				for (let buffer of buffers) {
+				for (let buffer of datas) {
 					player.server.write(buffer);
 				}
 			} else {
-				for (let buffer of buffers) {
+				for (let buffer of datas) {
 					player.preEstablishedBuffers.push(buffer);
 				}
 			}
@@ -192,7 +192,7 @@ class Player {
 				player
 			};
 			const {
-				buffers,
+				datas,
 				feedback
 			} = await Player.ygopro.handleBuffer(buffer, "STOC", null, param);
 			if (feedback) {
@@ -205,7 +205,7 @@ class Player {
 			if (!player.client) {
 				return;
 			}
-			for (let buffer of buffers) {
+			for (let buffer of datas) {
 				player.client.write(buffer);
 			}
 		}
@@ -224,6 +224,5 @@ Player.all = [];
 Player.prototype.data = {};
 Player.prototype.preEstablishedBuffers = [];
 Player.ygopro = new YGOProMessagesHelper();
-Player.ygoproForPostWatcher = new YGOProMessagesHelper();
 
 module.exports = Player;
