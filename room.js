@@ -186,9 +186,57 @@ class Room {
 			}, player.workerID);
 		}
 	}
+	async initWatcher() {
+		if (!this.data.established) {
+			return;
+		}
+		const {
+			watcherWorkerID,
+			watcherID,
+			recorderID
+		} = await processor.addTask("init_watcher", {
+			roomID: this.data.id,
+			host: this.data.connectionHost,
+			port: this.data.connectionPort
+		});
+	}
+	async watcherMessage(type, message) {
+		const buffer = Buffer.from(message, "base64");
+		switch (type) {
+			case "watcher": {
+				this.watcherBuffers.push(buffer);
+				const promises = this.watchers.map(player => {
+					return processor.addTask("send_message", {
+						playerID: player.id,
+						proto: "client",
+						message
+					}, player.workerID);
+				});
+				await Promise.all(promises);
+				break;
+			}
+			case "recorder": {
+				this.recorderBuffers.push(buffer);
+			}
+		}
+	}
+	async delete() {
+		if (this.data.deleted) {
+			return;
+		}
+		this.watcherBuffers = [];
+		this.recorderBuffers = [];
+		this.data.players = [];
+		if (this.data.watcherWorkerID) {
+			await processor.addTask("remove_watcher", [this.data.watcherID, this.data, recorderID]);
+		}
+		this.data.deleted = true;
+		Room.all[this.id] = null;
+	}
 }
 Room.prototype.data = {
 	players: [],
+	watchers: [],
 	status: "starting",
 	established: false,
 	duelStage: ygopro.constants.DUEL_STAGE.BEGIN,

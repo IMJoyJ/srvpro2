@@ -9,6 +9,7 @@ const spawn = require("child_process");
 
 let settings, processor, lflists;
 let spawnProcesses = [];
+let watchers = [];
 
 function loadHandlers() {
 	processor.addHandler("get_memory_usage", async (param, dataID) => {
@@ -79,7 +80,7 @@ function loadHandlers() {
 			});
 		});
 	});
-	processor.addHandler("connect_to_server", (param, dataID) => {
+	processor.addHandler("connect_to_server", async (param, dataID) => {
 		const player = Player.all[param.player];
 		if (!player) {
 			return;
@@ -87,6 +88,105 @@ function loadHandlers() {
 		const host = param.host;
 		const port = param.port;
 		await player.serverConnectTo(host, port);
+	});
+	processor.addHandler("init_watcher", async (param, dataID) => {
+		const {
+			roomID,
+			host,
+			port
+		} = param;
+		const watcherWorkerID = cluster.worker.id;
+		const watcherID = watchers.length;
+		await new Promise(done => {
+			let check = false;
+			watchers[watcherID] = net.createConnection({
+				host,
+				port
+			}, () => {
+				if (!check) {
+					check = true;
+					Player.ygopro.sendMessage(watchers[watcherID], "CTOS_PLAYER_INFO", {
+						name: "the Big Brother"
+					});
+					Player.ygopro.sendMessage(watchers[watcherID], "CTOS_JOIN_GAME", {
+						version: settings.version,
+						pass: "the Big Brother"
+					});
+					Player.ygopro.sendMessage(watchers[watcherID], "CTOS_HS_TOOBSERVER");
+					done();
+				}
+			});
+			watchers[watcherID].on("data", async (data) => {
+				await processor.addTask("watcher_message", {
+					room: roomID,
+					type: "watcher",
+					message: data.toString("base64")
+				});
+			});
+			watchers[watcherID].on("error", async (err) => {
+				log.warn("watcher error", roomID, err.toString());
+			});
+		});
+		const recorderID = watchers.length;
+		await new Promise(done => {
+			let check = false;
+			watchers[recorderID] = net.createConnection({
+				host,
+				port
+			}, () => {
+				if (!check) {
+					check = true;
+					Player.ygopro.sendMessage(watchers[recorderID], "CTOS_PLAYER_INFO", {
+						name: "Marshtomp"
+					});
+					Player.ygopro.sendMessage(watchers[recorderID], "CTOS_JOIN_GAME", {
+						version: settings.version,
+						pass: "Marshtomp"
+					});
+					Player.ygopro.sendMessage(watchers[recorderID], "CTOS_HS_TOOBSERVER");
+					done();
+				}
+			});
+			watchers[recorderID].on("data", async (data) => {
+				await processor.addTask("watcher_message", {
+					roomID,
+					type: "recorder",
+					message: data.toString("base64")
+				});
+			});
+			watchers[recorderID].on("error", async (err) => {
+				log.warn("recorder error", roomID, err.toString());
+			});
+		});
+		return {
+			watcherWorkerID,
+			watcherID,
+			recorderID
+		};
+	});
+	processor.addHandler("remove_watcher", async (param, dataID) => {
+		for (let id of param) {
+			if (!id) {
+				continue;
+			}
+			const watcher = watchers[id];
+			if (watcher) {
+				watcher.destroy();
+				watchers[id] = null;
+			}
+		}
+	});
+	processor.addHandler("send_message", async (param, dataID) => {
+		const {
+			playerID,
+			proto,
+			message
+		} = param;
+		const player = Player.all[playerID];
+		if (!player) {
+			return;
+		};
+		player.sendMessage(proto, message);
 	});
 }
 

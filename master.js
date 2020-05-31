@@ -102,43 +102,54 @@ async function loadYGOProDatas() {
 }
 
 function loadHandlers() {
-	processor.addHandler("get_metainfo", async(param, dataID, workerID) => {
+	processor.addHandler("get_metainfo", async (param, dataID, workerID) => {
 		return {
 			settings,
 			lflists
 		};
 	});
-	processor.addHandler("new_player", async(param, dataID, workerID) => {
-		
+	processor.addHandler("new_player", async (param, dataID, workerID) => {
+
 	});
-	processor.addHandler("check_inside_disconnect_list", async(param, dataID, workerID) => {
+	processor.addHandler("check_inside_disconnect_list", async (param, dataID, workerID) => {
 		return disconnectList[param];
 	});
-	processor.addHandler("disconnect_client", async(param, dataID, workerID) => {
-		
+	processor.addHandler("disconnect_client", async (param, dataID, workerID) => {
+
 	});
-	processor.addHandler("client_closed", async(param, dataID, workerID) => {
-		
+	processor.addHandler("client_closed", async (param, dataID, workerID) => {
+
 	});
-	processor.addHandler("server_closed", async(param, dataID, workerID) => {
-		
+	processor.addHandler("server_closed", async (param, dataID, workerID) => {
+
 	});
-	processor.addHandler("post_watcher_message", async(param, dataID, workerID) => {
-		
+	processor.addHandler("post_watcher_message", async (param, dataID, workerID) => {
+
 	});
-	processor.addHandler("get_bad_ip_count", async(param, dataID, workerID) => {
+	processor.addHandler("get_bad_ip_count", async (param, dataID, workerID) => {
 		if (badIP[param]) {
 			return badIP[param];
 		} else {
 			return 0;
-		 }
+		}
 	});
-	processor.addHandler("bad_ip", async(param, dataID, workerID) => {
+	processor.addHandler("bad_ip", async (param, dataID, workerID) => {
 		if (badIP[param]) {
 			++badIP[param];
 		} else {
 			badIP[param] = 1;
-		 }
+		}
+	});
+	processor.addHandler("watcher_message", async (param, dataID, workerID) => {
+		const {
+			roomID,
+			type,
+			message
+		} = param;
+		const room = Room.all[roomID];
+		if (room) {
+			await room.watcherMessage(type, message);
+		}
 	});
 }
 

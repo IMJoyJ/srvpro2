@@ -61,6 +61,27 @@ class Player {
 		}
 		this.preEstablishedBuffers = [];
 	}
+	async sendMessage(proto, message) {
+		if (typeof (message) === "string") {
+			message = Buffer.from(message, "base64");
+		}
+		let socket = this.client;
+		if (proto.startsWith("CTOS") || proto === "server") {
+			if (!this.server || this.data.server_closed) {
+				return;
+			}
+			socket = this.server;
+		} else {
+			if (!this.client || this.data.client_closed) {
+				return;
+			}
+		}
+		if (proto === "server" || proto === "client") {
+			socket.write(buffer);
+		} else {
+			Player.ygopro.sendMessage(socket, proto, message);
+		}
+	}
 	static clientCloseHandler(client) {
 		return async (error) => {
 			const player = client.player;
@@ -96,27 +117,43 @@ class Player {
 			if (!player) {
 				return;
 			}
-			if (player.data.isPostWatcher) {
-				await processor.addTask("post_watcher_message", {
-					player: player.data,
-					message: buffer.toString("base64")
-				});
-				return;
-			}
-			const protoFilter = player.data.preReconnecting ? ["UPDATE_DECK"] : null;
 			const param = {
 				player
 			};
+			if (player.data.isPostWatcher) {
+				const {
+					buffers,
+					feedback
+				} = await Player.ygoproForPostWatcher.handleBuffer(buffer, "CTOS", ["CHAT"], param);
+				if (feedback) {
+					log.warn(feedback.message, player.data.name, player.data.ip);
+					const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
+					if (feedback.type === "OVERSIZE" || badIPCount > 5) {
+						await processor.addTask("bad_ip", player.data.ip);
+						await player.terminate();
+						return;
+					}
+				}
+				for (let b of buffers) {
+					await processor.addTask("post_watcher_message", {
+						player: player.data,
+						message: b.toString("base64")
+					});
+				}
+				return;
+			}
+			const protoFilter = player.data.preReconnecting ? ["UPDATE_DECK"] : null;
 			const {
 				buffers,
 				feedback
-			} = await ygopro.handleBuffer(buffer, "CTOS", protoFilter, param);
+			} = await Player.ygopro.handleBuffer(buffer, "CTOS", protoFilter, param);
 			if (feedback) {
 				log.warn(feedback.message, player.data.name, player.data.ip);
 				const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
 				if (feedback.type === "OVERSIZE" || badIPCount > 5) {
 					await processor.addTask("bad_ip", player.data.ip);
 					await player.terminate();
+					return;
 				}
 			}
 			if (player.server && player.data.established) {
@@ -157,11 +194,12 @@ class Player {
 			const {
 				buffers,
 				feedback
-			} = await ygopro.handleBuffer(buffer, "STOC", null, param);
+			} = await Player.ygopro.handleBuffer(buffer, "STOC", null, param);
 			if (feedback) {
 				log.warn(feedback.message, player.data.name, player.data.ip);
 				if (feedback.type === "OVERSIZE") {
 					server.destroy();
+					return;
 				}
 			}
 			if (!player.client) {
@@ -186,5 +224,6 @@ Player.all = [];
 Player.prototype.data = {};
 Player.prototype.preEstablishedBuffers = [];
 Player.ygopro = new YGOProMessagesHelper();
+Player.ygoproForPostWatcher = new YGOProMessagesHelper();
 
 module.exports = Player;
