@@ -114,7 +114,7 @@ async function getMemoryUsage() {
 	global.memoryUsage = memoryUsage;
 }
 
-export async function main() {
+async function main() {
 	await loadSettings();
 	await loadYGOProDatas();
 	if (!settings.nproc) {

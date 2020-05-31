@@ -10,7 +10,7 @@ Room.prototype.data = {
 	players: [],
 	status: "starting",
 	established: false,
-	duelStage = ygopro.constants.DUEL_STAGE.BEGIN
+	duelStage: ygopro.constants.DUEL_STAGE.BEGIN
 };
 Room.prototype.watcherBuffers = [];
 Room.prototype.recorderBuffers = [];
