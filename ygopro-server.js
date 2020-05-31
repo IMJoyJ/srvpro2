@@ -26,6 +26,5 @@ moment.updateLocale('zh-cn', {
 	}
 });
 
-const cluster = require("cluster");
 const main = require(`./${cluster.isMaster ? "master" : "worker"}.js`);
 main();
