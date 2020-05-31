@@ -7,6 +7,7 @@ class Room {
 		this.data.hostinfo = hostinfo || JSON.parse(JSON.stringify(settings.hostinfo));
 		delete this.data.hostinfo.comment;
 		Room.all.push(this);
+		this.data.id = Room.all.length - 1;
 		if (name.slice(0, 2) === 'M#') {
 			this.data.hostinfo.mode = 1;
 		} else if (name.slice(0, 2) === 'T#') {
@@ -124,7 +125,7 @@ class Room {
 		}
 	}
 	async launch() {
-		const { workerID, success, processID, connectionHost, connectionPort } = await process.addTask("launch_ygopro", this.data.launchParam);
+		const { workerID, success, processID, connectionHost, connectionPort } = await processor.addTask("launch_ygopro", {params: this.data.launchParam, roomID: this.data.id});
 		if (!success) {
 			this.delete();
 			return false;
@@ -163,7 +164,8 @@ Room.prototype.data = {
 	players: [],
 	status: "starting",
 	established: false,
-	duelStage: ygopro.constants.DUEL_STAGE.BEGIN
+	duelStage: ygopro.constants.DUEL_STAGE.BEGIN,
+	YGOProErrorLength: 0
 };
 Room.prototype.watcherBuffers = [];
 Room.prototype.recorderBuffers = [];

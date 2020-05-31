@@ -11,7 +11,7 @@ class Player {
 		this.data.isLocalhost = this.ip.includes('127.0.0.1') || this.ip === "::1";
 		this.data.workerID = worker.id;
 		Player.all.push(this);
-		this.data.id = Player.all.indexOf(this);
+		this.data.id = Player.all.length - 1;
 		client.setTimeout(2000);
 		this.registerMessages();
 		this.registerEvents();
@@ -33,13 +33,13 @@ class Player {
 		this.data.clientTerminated = true;
 		if (this.data.client_closed && settings.reconnect.enabled) {
 			await processor.addTask("disconnect_client", this.data);
-		} else if(this.client) {
+		} else if (this.client) {
 			this.client.destroy();
 		}
 	}
 	async terminateServer() {
 		this.data.serverTerminated = true;
-		if(this.server) {
+		if (this.server) {
 			this.server.destroy();
 		}
 	}
@@ -78,6 +78,13 @@ class Player {
 			if (!player) {
 				return;
 			}
+			if (player.data.isPostWatcher) {
+				await processor.addTask("post_watcher_message", {
+					player: player.data,
+					message: buffer.toString("base64")
+				});
+				return;
+			}
 			const protoFilter = player.data.preReconnecting ? ["UPDATE_DECK"] : null;
 			const param = {
 				player
@@ -91,7 +98,7 @@ class Player {
 				const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
 				if (feedback.type === "OVERSIZE" || badIPCount > 5) {
 					await processor.addTask("bad_ip", player.data.ip);
-					await this.terminate();
+					await player.terminate();
 				}
 			}
 			if (player.server && player.data.established) {
@@ -136,7 +143,7 @@ class Player {
 			if (feedback) {
 				log.warn(feedback.message, player.data.name, player.data.ip);
 				if (feedback.type === "OVERSIZE") {
-					this.server.destroy();
+					server.destroy();
 				}
 			}
 			if (!player.client) {

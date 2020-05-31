@@ -8,6 +8,8 @@ const YGOProMessagesHelper = require("./YGOProMessages.js");
 const ygopro = new YGOProMessagesHelper();
 let settings, processor;
 let lflists = global.lflists = [];
+let disconnectList = global.disconnectList = {};
+let badIP = global.badIP = {};
 
 
 async function loadYAML(path) {
@@ -105,6 +107,38 @@ function loadHandlers() {
 			settings,
 			lflists
 		};
+	});
+	processor.addHandler("new_player", async(param, dataID, workerID) => {
+		
+	});
+	processor.addHandler("check_inside_disconnect_list", async(param, dataID, workerID) => {
+		return disconnectList[param];
+	});
+	processor.addHandler("disconnect_client", async(param, dataID, workerID) => {
+		
+	});
+	processor.addHandler("client_closed", async(param, dataID, workerID) => {
+		
+	});
+	processor.addHandler("server_closed", async(param, dataID, workerID) => {
+		
+	});
+	processor.addHandler("post_watcher_message", async(param, dataID, workerID) => {
+		
+	});
+	processor.addHandler("get_bad_ip_count", async(param, dataID, workerID) => {
+		if (badIP[param]) {
+			return badIP[param];
+		} else {
+			return 0;
+		 }
+	});
+	processor.addHandler("bad_ip", async(param, dataID, workerID) => {
+		if (badIP[param]) {
+			++badIP[param];
+		} else {
+			badIP[param] = 1;
+		 }
 	});
 }
 
