@@ -81,7 +81,7 @@ class Processor {
 	}
 
 	static masterHandler(_this) {
-		return (async (worker, data) => {
+		return async (worker, data) => {
 			if (data.proto === "solve") {
 				_this.solveTask(data);
 			} else if (_this.handlers[data.proto]) {
@@ -92,12 +92,19 @@ class Processor {
 					proto: "solve",
 					param: ret
 				});
-			}
-		});
+			} else {
+				log.warn("unknown task", proto);
+				worker.send({
+					id: data.id,
+					proto: "solve",
+					param: null
+				});
+			 }
+		};
 	}
 
 	static workerHandler(_this) {
-		return (async (data) => {
+		return async (data) => {
 			if (data.proto === "solve") {
 				_this.solveTask(data);
 			} else if (_this.handlers[data.proto]) {
@@ -108,8 +115,15 @@ class Processor {
 					proto: "solve",
 					param: ret
 				});
-			}
-		});
+			} else {
+				log.warn("unknown task", proto);
+				process.send({
+					id: data.id,
+					proto: "solve",
+					param: null
+				});
+			 }
+		};
 	}
 
 	addTask(proto, param, targetWorker) {

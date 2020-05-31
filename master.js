@@ -3,9 +3,12 @@ const merge = require("deepmerge");
 const os = require('os');
 const YAML = require("yaml");
 const Processor = require("./processor.js");
+const Room = require("./room.js");
+const YGOProMessagesHelper = require("./YGOProMessages.js");
+const ygopro = new YGOProMessagesHelper();
 let settings, processor;
-let ROOM_all = global.ROOM_all = [];
 let lflists = global.lflists = [];
+
 
 async function loadYAML(path) {
 	const content = await fs.promises.readFile(path, "utf-8");
@@ -105,7 +108,13 @@ function loadHandlers() {
 	});
 }
 
-async function main() {
+global.memoryUsage = 0;
+async function getMemoryUsage() {
+	const memoryUsage = await processor.addTask("get_memory_usage");
+	global.memoryUsage = memoryUsage;
+}
+
+export async function main() {
 	await loadSettings();
 	await loadYGOProDatas();
 	if (!settings.nproc) {
@@ -114,6 +123,6 @@ async function main() {
 	processor = global.Processor = new Processor(settings.nproc);
 	loadHandlers();
 	await processor.startWorkers();
-	console.log(await processor.addTask("get_memory_usage"));
+	setInterval(getMemoryUsage, 3000);
 }
 module.exports = main;

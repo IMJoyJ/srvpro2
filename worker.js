@@ -1,10 +1,12 @@
 const fs = require('fs');
+const net = require("net");
 const Processor = require("./processor.js");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
+const Player = require("./player.js");
+const cluster = require("cluster");
 
 let settings, processor, lflists;
-
 function loadHandlers() {
 	processor.addHandler("get_memory_usage", async (param, dataID) => {
 		const memStdout = (await exec("free")).stdout;
@@ -27,12 +29,28 @@ function loadHandlers() {
 	})
 }
 
+async function netRequestHandler(socket) {
+	const player = new Player(socket, cluster.worker);
+	await processor.addTask("new_player", player);
+}
+
+function startServer() {
+	return new Promise(callback => {
+		let server = net.createServer(netRequestHandler);
+		server.listen({
+			host: settings.host,
+			port: settings.port
+		}, callback);
+	});
+ }
+
 async function main() {
 	processor = global.Processor = new Processor();
 	const metaInfo = await processor.addTask("get_metainfo");
-	settings = metaInfo.settings;
-	lflists = metaInfo.lflists;
+	settings = global.settings = metaInfo.settings;
+	lflists = global.lflists = metaInfo.lflists;
 	loadHandlers();
+	await startServer();
 	await processor.addTask("ready");
 }
 module.exports = main;

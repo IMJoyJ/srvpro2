@@ -33,7 +33,7 @@ class YGOProMessagesHelper {
 	}
 
 	initDatas() {
-		const ygoproDatas = loadYAML('./datas/ygopro-datas.yaml')
+		const ygoproDatas = loadYAML('./data/ygopro-datas.yaml')
 		this.structs_declaration = ygoproDatas.structs_declaration;
 		this.typedefs =  ygoproDatas.typedefs;
 		this.proto_structs = ygoproDatas.proto_structs;

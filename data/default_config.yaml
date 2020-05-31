@@ -14,3 +14,7 @@ hostinfo:
   start_hand": 5
   draw_count": 1
   time_limit": 180
+reconnect:
+  enabled: true
+  strictMode: true
+  timeout: 90000
