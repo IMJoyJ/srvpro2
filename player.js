@@ -7,6 +7,8 @@ class Player {
 		this.server = new net.Socket();
 		client.player = this;
 		this.server.player = this;
+		this.preEstablishedBuffers = [];
+		this.data = {};
 		this.data.ip = client.remoteAddress;
 		this.data.isLocalhost = this.ip.includes('127.0.0.1') || this.ip === "::1";
 		this.data.workerID = worker.id;
@@ -221,8 +223,6 @@ class Player {
 	}
 }
 Player.all = [];
-Player.prototype.data = {};
-Player.prototype.preEstablishedBuffers = [];
 Player.ygopro = new YGOProMessagesHelper();
 
 module.exports = Player;

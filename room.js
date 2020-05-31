@@ -3,6 +3,17 @@ const ygopro = new YGOProMessagesHelper();
 const _ = require("underscore");
 class Room {
 	constructor(name, hostinfo) {
+		this.watcherBuffers = [];
+		this.recorderBuffers = [];
+		this.replays = [];
+		this.data = {
+			players: [],
+			watchers: [],
+			status: "starting",
+			established: false,
+			duelStage: ygopro.constants.DUEL_STAGE.BEGIN,
+			YGOProErrorLength: 0
+		};
 		this.data.name = name;
 		this.data.hostinfo = hostinfo || JSON.parse(JSON.stringify(settings.hostinfo));
 		delete this.data.hostinfo.comment;
@@ -234,17 +245,6 @@ class Room {
 		Room.all[this.id] = null;
 	}
 }
-Room.prototype.data = {
-	players: [],
-	watchers: [],
-	status: "starting",
-	established: false,
-	duelStage: ygopro.constants.DUEL_STAGE.BEGIN,
-	YGOProErrorLength: 0
-};
-Room.prototype.watcherBuffers = [];
-Room.prototype.recorderBuffers = [];
-Room.prototype.replays = [];
 Room.all = [];
 
 module.exports = Room;

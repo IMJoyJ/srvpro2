@@ -28,6 +28,20 @@ class Handler {
 class YGOProMessagesHelper {
 
 	constructor() {
+		this.handlers = {
+			STOC: [{},
+				{},
+				{},
+				{},
+				{},
+			],
+			CTOS: [{},
+				{},
+				{},
+				{},
+				{},
+			]
+		}
 		this.initDatas();
 		this.initStructs();
 	}
@@ -41,6 +55,7 @@ class YGOProMessagesHelper {
 	}
 
 	initStructs() {
+		this.structs = {};
 		for (let name in this.structs_declaration ) {
 			const declaration = this.structs_declaration [name];
 			let result = Struct();
@@ -232,22 +247,6 @@ class YGOProMessagesHelper {
 		};
 	}
 
-}
-
-YGOProMessagesHelper.prototype.structs = {}
-YGOProMessagesHelper.prototype.handlers = {
-	STOC: [{},
-		{},
-		{},
-		{},
-		{},
-	],
-	CTOS: [{},
-		{},
-		{},
-		{},
-		{},
-	]
 }
 
 module.exports = YGOProMessagesHelper;
