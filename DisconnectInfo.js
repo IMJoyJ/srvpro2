@@ -3,7 +3,7 @@ class DisconnectInfo {
 	constructor(roomID, player, deckBuffer) {
 		this.roomID = roomID;
 		this.player = player;
-		this.deckBuffer = deckBuffer;
+		this.deckBuffer = deckBuffer.toString("base64");
 		this.destroyTimeout = setTimeout(this.timeout, settings.reconnect.timeout);
 	}
 	async timeout() {
