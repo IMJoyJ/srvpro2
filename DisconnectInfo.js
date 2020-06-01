@@ -1,11 +1,9 @@
 const Room = require("./room.js");
 class DisconnectInfo {
 	constructor(roomID, player, deckBuffer) {
-		this.data = {
-			roomID,
-			player,
-			deckBuffer: deckBuffer.toString("base64")
-		}
+		this.roomID = roomID;
+		this.player = player;
+		this.deckBuffer = deckBuffer;
 		this.destroyTimeout = setTimeout(this.timeout, settings.reconnect.timeout);
 	}
 	async timeout() {

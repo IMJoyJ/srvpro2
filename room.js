@@ -6,58 +6,56 @@ class Room {
 		this.watcherBuffers = [];
 		this.recorderBuffers = [];
 		this.replays = [];
-		this.data = {
-			players: [],
-			watchers: [],
-			status: "starting",
-			established: false,
-			duelStage: ygopro.constants.DUEL_STAGE.BEGIN,
-			YGOProErrorLength: 0
-		};
-		this.data.name = name;
-		this.data.hostinfo = hostinfo || JSON.parse(JSON.stringify(settings.hostinfo));
-		delete this.data.hostinfo.comment;
+		this.players = [];
+		this.watchers = [];
+		this.status = "starting";
+		this.established = false;
+		this.duelStage = ygopro.constants.DUEL_STAGE.BEGIN;
+		this.YGOProErrorLength = 0;
+		this.name = name;
+		this.hostinfo = hostinfo || JSON.parse(JSON.stringify(settings.hostinfo));
+		delete this.hostinfo.comment;
 		Room.all.push(this);
-		this.data.id = Room.all.length - 1;
+		this.id = Room.all.length - 1;
 		if (name.slice(0, 2) === 'M#') {
-			this.data.hostinfo.mode = 1;
+			this.hostinfo.mode = 1;
 		} else if (name.slice(0, 2) === 'T#') {
-			this.data.hostinfo.mode = 2;
-			this.data.hostinfo.start_lp = 16000;
+			this.hostinfo.mode = 2;
+			this.hostinfo.start_lp = 16000;
 		} else if (name.slice(0, 3) === 'AI#') {
-			this.data.hostinfo.rule = 2;
-			this.data.hostinfo.lflist = -1;
-			this.data.hostinfo.time_limit = 999;
+			this.hostinfo.rule = 2;
+			this.hostinfo.lflist = -1;
+			this.hostinfo.time_limit = 999;
 		} else if ((param = name.match(/^(\d)(\d)(T|F)(T|F)(T|F)(\d+),(\d+),(\d+)/i))) {
-			this.data.hostinfo.rule = parseInt(param[1]);
-			this.data.hostinfo.mode = parseInt(param[2]);
-			this.data.hostinfo.duel_rule = (param[3] === 'T' ? 3 : 4);
-			this.data.hostinfo.no_check_deck = param[4] === 'T';
-			this.data.hostinfo.no_shuffle_deck = param[5] === 'T';
-			this.data.hostinfo.start_lp = parseInt(param[6]);
-			this.data.hostinfo.start_hand = parseInt(param[7]);
-			this.data.hostinfo.draw_count = parseInt(param[8]);
+			this.hostinfo.rule = parseInt(param[1]);
+			this.hostinfo.mode = parseInt(param[2]);
+			this.hostinfo.duel_rule = (param[3] === 'T' ? 3 : 4);
+			this.hostinfo.no_check_deck = param[4] === 'T';
+			this.hostinfo.no_shuffle_deck = param[5] === 'T';
+			this.hostinfo.start_lp = parseInt(param[6]);
+			this.hostinfo.start_hand = parseInt(param[7]);
+			this.hostinfo.draw_count = parseInt(param[8]);
 		} else if ((param = name.match(/(.+)#/)) !== null) {
 			const rule = param[1].toUpperCase();
 			if (rule.match(/(^|，|,)(M|MATCH)(，|,|$)/)) {
-				this.data.hostinfo.mode = 1;
+				this.hostinfo.mode = 1;
 			}
 			if (rule.match(/(^|，|,)(T|TAG)(，|,|$)/)) {
-				this.data.hostinfo.mode = 2;
-				this.data.hostinfo.start_lp = 16000;
+				this.hostinfo.mode = 2;
+				this.hostinfo.start_lp = 16000;
 			}
 			if (rule.match(/(^|，|,)(TCGONLY|TO)(，|,|$)/)) {
-				this.data.hostinfo.rule = 1;
-				this.data.hostinfo.lflist = _.findIndex(lflists, function (list) {
+				this.hostinfo.rule = 1;
+				this.hostinfo.lflist = _.findIndex(lflists, function (list) {
 					return list.tcg;
 				});
 			}
 			if (rule.match(/(^|，|,)(OCGONLY|OO)(，|,|$)/)) {
-				this.data.hostinfo.rule = 0;
-				this.data.hostinfo.lflist = 0;
+				this.hostinfo.rule = 0;
+				this.hostinfo.lflist = 0;
 			}
 			if (rule.match(/(^|，|,)(OT|TCG)(，|,|$)/)) {
-				this.data.hostinfo.rule = 2;
+				this.hostinfo.rule = 2;
 			}
 			if ((param = rule.match(/(^|，|,)LP(\d+)(，|,|$)/))) {
 				const start_lp = parseInt(param[2]);
@@ -67,7 +65,7 @@ class Room {
 				if (start_lp >= 99999) {
 					start_lp = 99999;
 				}
-				this.data.hostinfo.start_lp = start_lp;
+				this.hostinfo.start_lp = start_lp;
 			}
 			let param;
 			if ((param = rule.match(/(^|，|,)(TIME|TM|TI)(\d+)(，|,|$)/))) {
@@ -81,7 +79,7 @@ class Room {
 				if (time_limit >= 999) {
 					time_limit = 999;
 				}
-				this.data.hostinfo.time_limit = time_limit;
+				this.hostinfo.time_limit = time_limit;
 			}
 			if ((param = rule.match(/(^|，|,)(START|ST)(\d+)(，|,|$)/))) {
 				start_hand = parseInt(param[3]);
@@ -91,46 +89,46 @@ class Room {
 				if (start_hand >= 40) {
 					start_hand = 40;
 				}
-				this.data.hostinfo.start_hand = start_hand;
+				this.hostinfo.start_hand = start_hand;
 			}
 			if ((param = rule.match(/(^|，|,)(DRAW|DR)(\d+)(，|,|$)/))) {
 				draw_count = parseInt(param[3]);
 				if (draw_count >= 35) {
 					draw_count = 35;
 				}
-				this.data.hostinfo.draw_count = draw_count;
+				this.hostinfo.draw_count = draw_count;
 			}
 			if ((param = rule.match(/(^|，|,)(LFLIST|LF)(\d+)(，|,|$)/))) {
 				lflist = parseInt(param[3]) - 1;
-				this.data.hostinfo.lflist = lflist;
+				this.hostinfo.lflist = lflist;
 			}
 			if (rule.match(/(^|，|,)(NOLFLIST|NF)(，|,|$)/)) {
-				this.data.hostinfo.lflist = -1;
+				this.hostinfo.lflist = -1;
 			}
 			if (rule.match(/(^|，|,)(NOUNIQUE|NU)(，|,|$)/)) {
-				this.data.hostinfo.rule = 3;
+				this.hostinfo.rule = 3;
 			}
 			if (rule.match(/(^|，|,)(NOCHECK|NC)(，|,|$)/)) {
-				this.data.hostinfo.no_check_deck = true;
+				this.hostinfo.no_check_deck = true;
 			}
 			if (rule.match(/(^|，|,)(NOSHUFFLE|NS)(，|,|$)/)) {
-				this.data.hostinfo.no_shuffle_deck = true;
+				this.hostinfo.no_shuffle_deck = true;
 			}
 			if (rule.match(/(^|，|,)(IGPRIORITY|PR)(，|,|$)/)) { // deprecated
-				this.data.hostinfo.duel_rule = 4;
+				this.hostinfo.duel_rule = 4;
 			}
 			if ((param = rule.match(/(^|，|,)(DUELRULE|MR)(\d+)(，|,|$)/))) {
 				duel_rule = parseInt(param[3]);
 				if (duel_rule && duel_rule > 0 && duel_rule <= 5) {
-					this.data.hostinfo.duel_rule = duel_rule;
+					this.hostinfo.duel_rule = duel_rule;
 				}
 			}
 			if (rule.match(/(^|，|,)(NOWATCH|NW)(，|,|$)/)) {
-				this.data.hostinfo.no_watch = true;
+				this.hostinfo.no_watch = true;
 			}
 		}
-		this.data.hostinfo.replay_mode = 0x0;
-		this.data.launchParam = [0, this.data.hostinfo.lflist, this.data.hostinfo.rule, this.data.hostinfo.mode, this.data.hostinfo.duel_rule, (this.data.hostinfo.no_check_deck ? 'T' : 'F'), (this.data.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.data.hostinfo.start_lp, this.data.hostinfo.start_hand, this.data.hostinfo.draw_count, this.data.hostinfo.time_limit, this.data.hostinfo.replay_mode];
+		this.hostinfo.replay_mode = 0x0;
+		this.launchParam = [0, this.hostinfo.lflist, this.hostinfo.rule, this.hostinfo.mode, this.hostinfo.duel_rule, (this.hostinfo.no_check_deck ? 'T' : 'F'), (this.hostinfo.no_shuffle_deck ? 'T' : 'F'), this.hostinfo.start_lp, this.hostinfo.start_hand, this.hostinfo.draw_count, this.hostinfo.time_limit, this.hostinfo.replay_mode];
 		let seeds = Room.getSeedTimet(3);
 		for (i = 0; i < 3; ++i) {
 			param.push(seeds[i]);
@@ -144,19 +142,19 @@ class Room {
 			connectionHost,
 			connectionPort
 		} = await processor.addTask("launch_ygopro", {
-			params: this.data.launchParam,
-			roomID: this.data.id
+			params: this.launchParam,
+			roomID: this.id
 		});
 		if (!success) {
 			this.delete();
 			return false;
 		}
-		this.data.processWorkerID = workerID;
-		this.data.processID = processID;
-		this.data.connectionHost = connectionHost;
-		this.data.connectionPort = connectionPort;
+		this.processWorkerID = workerID;
+		this.processID = processID;
+		this.connectionHost = connectionHost;
+		this.connectionPort = connectionPort;
 		this.established = true;
-		for (let player in this.data.players) {
+		for (let player in this.players) {
 			await processor.addTask("connect_to_server", {
 				player: player.id,
 				host: connectionHost,
@@ -188,17 +186,17 @@ class Room {
 		return ret;
 	}
 	async connect(player) {
-		this.data.players.push(player);
-		if (this.data.established) {
+		this.players.push(player);
+		if (this.established) {
 			await processor.addTask("connect_to_server", {
 				player: player.id,
-				host: this.data.connectionHost,
-				port: this.data.connectionPort
+				host: this.connectionHost,
+				port: this.connectionPort
 			}, player.workerID);
 		}
 	}
 	async initWatcher() {
-		if (!this.data.established) {
+		if (!this.established) {
 			return;
 		}
 		const {
@@ -206,13 +204,13 @@ class Room {
 			watcherID,
 			recorderID
 		} = await processor.addTask("init_watcher", {
-			roomID: this.data.id,
-			host: this.data.connectionHost,
-			port: this.data.connectionPort
+			roomID: this.id,
+			host: this.connectionHost,
+			port: this.connectionPort
 		});
-		this.data.watcherWorkerID = watcherWorkerID;
-		this.data.watcherID = watcherID;
-		this.data.recorderID = recorderID;
+		this.watcherWorkerID = watcherWorkerID;
+		this.watcherID = watcherID;
+		this.recorderID = recorderID;
 	}
 	async watcherMessage(type, message) {
 		const buffer = Buffer.from(message, "base64");
@@ -235,16 +233,16 @@ class Room {
 		}
 	}
 	async delete() {
-		if (this.data.deleted) {
+		if (this.deleted) {
 			return;
 		}
 		this.watcherBuffers = [];
 		this.recorderBuffers = [];
-		this.data.players = [];
-		if (this.data.watcherWorkerID) {
-			await processor.addTask("remove_watcher", [this.data.watcherID, this.data, recorderID]);
+		this.players = [];
+		if (this.watcherWorkerID) {
+			await processor.addTask("remove_watcher", [this.watcherID, this.recorderID]);
 		}
-		this.data.deleted = true;
+		this.deleted = true;
 		Room.all[this.id] = null;
 	}
 }

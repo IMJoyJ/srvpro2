@@ -113,12 +113,7 @@ function loadHandlers() {
 
 	});
 	processor.addHandler("check_inside_disconnect_list", async (param, dataID, workerID) => {
-		const info = disconnectList[param];
-		if (info) {
-			return info.data;
-		} else {
-			return null;
-		}
+		return disconnectList[param];
 	});
 	processor.addHandler("disconnect_client", async (param, dataID, workerID) => {
 
@@ -161,7 +156,7 @@ function loadHandlers() {
 		const roomID = param;
 		const room = Room.all[roomID];
 		if (room) {
-			return room.data;
+			return room;
 		} else {
 			return null;
 		}

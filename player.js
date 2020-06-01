@@ -8,12 +8,11 @@ class Player {
 		client.player = this;
 		this.server.player = this;
 		this.preEstablishedBuffers = [];
-		this.data = {};
-		this.data.ip = client.remoteAddress;
-		this.data.isLocalhost = this.ip.includes('127.0.0.1') || this.ip === "::1";
-		this.data.workerID = worker.id;
+		this.ip = client.remoteAddress;
+		this.isLocalhost = this.ip.includes('127.0.0.1') || this.ip === "::1";
+		this.workerID = worker.id;
 		Player.all.push(this);
-		this.data.id = Player.all.length - 1;
+		this.id = Player.all.length - 1;
 		client.setTimeout(2000);
 		this.registerEvents();
 	}
@@ -23,10 +22,10 @@ class Player {
 			if (!player) {
 				return;
 			}
-			if (!player.data.client_closed) {
-				player.data.client_closed = true;
+			if (!player.client_closed) {
+				player.client_closed = true;
 				processor.addTask("client_closed", {
-					player: player.data,
+					player: player,
 					error
 				})
 			}
@@ -55,43 +54,43 @@ class Player {
 			const param = {
 				player
 			};
-			if (player.data.isPostWatcher) {
+			if (player.isPostWatcher) {
 				const {
 					datas,
 					feedback
 				} = await Player.ygopro.handleBuffer(buffer, "CTOS", ["CHAT"], param);
 				if (feedback) {
-					log.warn(feedback.message, player.data.name, player.data.ip);
-					const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
+					log.warn(feedback.message, player.name, player.ip);
+					const badIPCount = await processor.addTask("get_bad_ip_count", player.ip);
 					if (feedback.type === "OVERSIZE" || badIPCount > 5) {
-						await processor.addTask("bad_ip", player.data.ip);
+						await processor.addTask("bad_ip", player.ip);
 						await player.terminateClient();
 						return;
 					}
 				}
 				for (let b of datas) {
 					await processor.addTask("post_watcher_message", {
-						player: player.data,
+						player: player,
 						message: b.toString("base64")
 					});
 				}
 				return;
 			}
-			const protoFilter = player.data.preReconnecting ? ["UPDATE_DECK"] : null;
+			const protoFilter = player.preReconnecting ? ["UPDATE_DECK"] : null;
 			const {
 				datas,
 				feedback
 			} = await Player.ygopro.handleBuffer(buffer, "CTOS", protoFilter, param);
 			if (feedback) {
-				log.warn(feedback.message, player.data.name, player.data.ip);
-				const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
+				log.warn(feedback.message, player.name, player.ip);
+				const badIPCount = await processor.addTask("get_bad_ip_count", player.ip);
 				if (feedback.type === "OVERSIZE" || badIPCount > 5) {
-					await processor.addTask("bad_ip", player.data.ip);
+					await processor.addTask("bad_ip", player.ip);
 					await player.terminate();
 					return;
 				}
 			}
-			if (player.server && player.data.established) {
+			if (player.server && player.established) {
 				for (let buffer of datas) {
 					player.server.write(buffer);
 				}
@@ -108,10 +107,10 @@ class Player {
 			if (!player) {
 				return;
 			}
-			if (!player.data.server_closed) {
-				player.data.server_closed = true;
+			if (!player.server_closed) {
+				player.server_closed = true;
 				processor.addTask("server_closed", {
-					player: player.data,
+					player: player,
 					error
 				})
 			}
@@ -131,7 +130,7 @@ class Player {
 				feedback
 			} = await Player.ygopro.handleBuffer(buffer, "STOC", null, param);
 			if (feedback) {
-				log.warn(feedback.message, player.data.name, player.data.ip);
+				log.warn(feedback.message, player.name, player.ip);
 				if (feedback.type === "OVERSIZE") {
 					server.destroy();
 					return;
@@ -155,12 +154,12 @@ class Player {
 		this.server.on("data", Player.serverBufferHandler(this.server));
 	}
 	getIndex() {
-		if (this.data && this.data.vpass) {
-			return this.data.name_vpass;
-		} else if (this.data.isLocalhost || !settings.reconnect.strict) {
-			return this.data.name;
+		if (this.vpass) {
+			return this.name_vpass;
+		} else if (this.isLocalhost || !settings.reconnect.strict) {
+			return this.name;
 		} else {
-			return this.data.ip + ":" + this.data.name;
+			return this.ip + ":" + this.name;
 		}
 	}
 	async getDisconnectInfo() {
@@ -168,15 +167,15 @@ class Player {
 		return await processor.addTask("check_inside_disconnect_list", index);
 	}
 	async terminateClient() {
-		this.data.clientTerminated = true;
-		if (this.data.client_closed && settings.reconnect.enabled) {
+		this.clientTerminated = true;
+		if (this.client_closed && settings.reconnect.enabled) {
 			await processor.addTask("disconnect_client", this.data);
 		} else if (this.client) {
 			this.client.destroy();
 		}
 	}
 	async terminateServer() {
-		this.data.serverTerminated = true;
+		this.serverTerminated = true;
 		if (this.server) {
 			this.server.destroy();
 		}
@@ -205,12 +204,12 @@ class Player {
 		}
 		let socket = this.client;
 		if (proto.startsWith("CTOS") || proto === "server") {
-			if (!this.server || this.data.server_closed) {
+			if (!this.server || this.server_closed) {
 				return;
 			}
 			socket = this.server;
 		} else {
-			if (!this.client || this.data.client_closed) {
+			if (!this.client || this.client_closed) {
 				return;
 			}
 		}
@@ -221,10 +220,10 @@ class Player {
 		}
 	}
 	async getRoom() {
-		return await processor.addTask("get_room", this.data.roomID);
+		return await processor.addTask("get_room", this.roomID);
 	}
 	async isAbleToReconnect(deckbuf) {
-		if (!settings.reconnect.enabled || this.data.clientTerminated) {
+		if (!settings.reconnect.enabled || this.clientTerminated) {
 			return false;
 		}
 		const disconnectInfo = await this.getDisconnectInfo();
