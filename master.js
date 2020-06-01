@@ -133,7 +133,7 @@ function loadHandlers() {
 	});
 	processor.addHandler("server_closed", async (param, dataID, workerID) => {
 		if (error) {
-			console.warn("Player", player.id.ToString(), "disconnected:", error);
+			console.warn("Server unexcepted closed:", error);
         }
 		disconnectList.push(player);
 	});
