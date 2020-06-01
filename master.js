@@ -5,6 +5,7 @@ const YAML = require("yaml");
 const Processor = require("./processor.js");
 const Room = require("./room.js");
 const YGOProMessagesHelper = require("./YGOProMessages.js");
+const DisconnectInfo = require("./DisconnectInfo.js");
 const ygopro = new YGOProMessagesHelper();
 let settings, processor;
 let lflists = global.lflists = [];
@@ -112,7 +113,12 @@ function loadHandlers() {
 
 	});
 	processor.addHandler("check_inside_disconnect_list", async (param, dataID, workerID) => {
-		return disconnectList[param];
+		const info = disconnectList[param];
+		if (info) {
+			return info.data;
+		} else {
+			return null;
+		}
 	});
 	processor.addHandler("disconnect_client", async (param, dataID, workerID) => {
 
@@ -149,6 +155,15 @@ function loadHandlers() {
 		const room = Room.all[roomID];
 		if (room) {
 			await room.watcherMessage(type, message);
+		}
+	});
+	processor.addHandler("get_room", async (param, dataID, workerID) => {
+		const roomID = param;
+		const room = Room.all[roomID];
+		if (room) {
+			return room.data;
+		} else {
+			return null;
 		}
 	});
 }

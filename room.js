@@ -210,6 +210,9 @@ class Room {
 			host: this.data.connectionHost,
 			port: this.data.connectionPort
 		});
+		this.data.watcherWorkerID = watcherWorkerID;
+		this.data.watcherID = watcherID;
+		this.data.recorderID = recorderID;
 	}
 	async watcherMessage(type, message) {
 		const buffer = Buffer.from(message, "base64");
@@ -246,5 +249,6 @@ class Room {
 	}
 }
 Room.all = [];
+Room.disconnectList = {};
 
 module.exports = Room;

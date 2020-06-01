@@ -15,74 +15,7 @@ class Player {
 		Player.all.push(this);
 		this.data.id = Player.all.length - 1;
 		client.setTimeout(2000);
-		this.registerMessages();
 		this.registerEvents();
-	}
-	getIndex() {
-		if (this.data && this.data.vpass) {
-			return this.data.name_vpass;
-		} else if (this.data.isLocalhost || !settings.reconnect.strict) {
-			return this.data.name;
-		} else {
-			return this.data.ip + ":" + this.data.name;
-		}
-	}
-	async isInsideDisconnectList() {
-		const index = this.getIndex();
-		return await processor.addTask("check_inside_disconnect_list", index);
-	}
-	async terminateClient() {
-		this.data.clientTerminated = true;
-		if (this.data.client_closed && settings.reconnect.enabled) {
-			await processor.addTask("disconnect_client", this.data);
-		} else if (this.client) {
-			this.client.destroy();
-		}
-	}
-	async terminateServer() {
-		this.data.serverTerminated = true;
-		if (this.server) {
-			this.server.destroy();
-		}
-	}
-	async serverConnectTo(host, port) {
-		let check = false;
-		await new Promise(done => {
-			this.server.connect({
-				port,
-				host,
-			}, () => {
-				if (!check) {
-					check = true;
-					done();
-				}
-			});
-		});
-		for (let buffer of this.preEstablishedBuffers) {
-			this.server.write(buffer);
-		}
-		this.preEstablishedBuffers = [];
-	}
-	async sendMessage(proto, message) {
-		if (typeof (message) === "string") {
-			message = Buffer.from(message, "base64");
-		}
-		let socket = this.client;
-		if (proto.startsWith("CTOS") || proto === "server") {
-			if (!this.server || this.data.server_closed) {
-				return;
-			}
-			socket = this.server;
-		} else {
-			if (!this.client || this.data.client_closed) {
-				return;
-			}
-		}
-		if (proto === "server" || proto === "client") {
-			socket.write(buffer);
-		} else {
-			Player.ygopro.sendMessage(socket, proto, message);
-		}
 	}
 	static clientCloseHandler(client) {
 		return async (error) => {
@@ -106,7 +39,7 @@ class Player {
 				client.destroy();
 				return;
 			} else {
-				const check = await player.isInsideDisconnectList();
+				const check = await player.getDisconnectInfo();
 				if (!check) {
 					client.destroy();
 				}
@@ -132,7 +65,7 @@ class Player {
 					const badIPCount = await processor.addTask("get_bad_ip_count", player.data.ip);
 					if (feedback.type === "OVERSIZE" || badIPCount > 5) {
 						await processor.addTask("bad_ip", player.data.ip);
-						await player.terminate();
+						await player.terminateClient();
 						return;
 					}
 				}
@@ -221,6 +154,94 @@ class Player {
 		this.server.on("error", Player.serverCloseHandler(this.server));
 		this.server.on("data", Player.serverBufferHandler(this.server));
 	}
+	getIndex() {
+		if (this.data && this.data.vpass) {
+			return this.data.name_vpass;
+		} else if (this.data.isLocalhost || !settings.reconnect.strict) {
+			return this.data.name;
+		} else {
+			return this.data.ip + ":" + this.data.name;
+		}
+	}
+	async getDisconnectInfo() {
+		const index = this.getIndex();
+		return await processor.addTask("check_inside_disconnect_list", index);
+	}
+	async terminateClient() {
+		this.data.clientTerminated = true;
+		if (this.data.client_closed && settings.reconnect.enabled) {
+			await processor.addTask("disconnect_client", this.data);
+		} else if (this.client) {
+			this.client.destroy();
+		}
+	}
+	async terminateServer() {
+		this.data.serverTerminated = true;
+		if (this.server) {
+			this.server.destroy();
+		}
+	}
+	async serverConnectTo(host, port) {
+		let check = false;
+		await new Promise(done => {
+			this.server.connect({
+				port,
+				host,
+			}, () => {
+				if (!check) {
+					check = true;
+					done();
+				}
+			});
+		});
+		for (let buffer of this.preEstablishedBuffers) {
+			this.server.write(buffer);
+		}
+		this.preEstablishedBuffers = [];
+	}
+	async sendMessage(proto, message) {
+		if (typeof (message) === "string") {
+			message = Buffer.from(message, "base64");
+		}
+		let socket = this.client;
+		if (proto.startsWith("CTOS") || proto === "server") {
+			if (!this.server || this.data.server_closed) {
+				return;
+			}
+			socket = this.server;
+		} else {
+			if (!this.client || this.data.client_closed) {
+				return;
+			}
+		}
+		if (proto === "server" || proto === "client") {
+			socket.write(buffer);
+		} else {
+			Player.ygopro.sendMessage(socket, proto, message);
+		}
+	}
+	async getRoom() {
+		return await processor.addTask("get_room", this.data.roomID);
+	}
+	async isAbleToReconnect(deckbuf) {
+		if (!settings.reconnect.enabled || this.data.clientTerminated) {
+			return false;
+		}
+		const disconnectInfo = await this.getDisconnectInfo();
+		if (!disconnectInfo) {
+			return false;
+		}
+		const room = await processor.addTask("get_room", disconnectInfo.roomID);
+		if (!room) {
+			await this.reconnectUnregister(false);
+			return false;
+		}
+		if (deckbuf && !_.isEqual(deckbuf, Buffer.from(deckBuffer, "base64"))) {
+			return false;
+		}
+		return true;
+	}
+
 }
 Player.all = [];
 Player.ygopro = new YGOProMessagesHelper();
