@@ -75,9 +75,10 @@ class Room {
 				}
 				if (time_limit >= 1 && time_limit <= 60) {
 					time_limit = time_limit * 60;
-				}
-				if (time_limit >= 999) {
-					time_limit = 999;
+				} 
+				//For creating short-time rooms
+				if (time_limit > 999) {
+					time_limit = parseInt(time_limit / 1000);
 				}
 				this.hostinfo.time_limit = time_limit;
 			}
@@ -93,6 +94,9 @@ class Room {
 			}
 			if ((param = rule.match(/(^|，|,)(DRAW|DR)(\d+)(，|,|$)/))) {
 				draw_count = parseInt(param[3]);
+				if (draw_count <= 0) {
+					draw_count = 1;
+				}
 				if (draw_count >= 35) {
 					draw_count = 35;
 				}

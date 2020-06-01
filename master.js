@@ -4,6 +4,7 @@ const os = require('os');
 const YAML = require("yaml");
 const Processor = require("./processor.js");
 const Room = require("./room.js");
+const Player = require("./player.js");
 const YGOProMessagesHelper = require("./YGOProMessages.js");
 const DisconnectInfo = require("./DisconnectInfo.js");
 const ygopro = new YGOProMessagesHelper();
@@ -110,21 +111,40 @@ function loadHandlers() {
 		};
 	});
 	processor.addHandler("new_player", async (param, dataID, workerID) => {
-
+		Player.all.push(param);
 	});
 	processor.addHandler("check_inside_disconnect_list", async (param, dataID, workerID) => {
 		return disconnectList[param];
 	});
 	processor.addHandler("disconnect_client", async (param, dataID, workerID) => {
+		disconnectList.push(param);
+
 
 	});
 	processor.addHandler("client_closed", async (param, dataID, workerID) => {
-
+		const {
+			player,
+			error
+		} = param;
+		if (error) {
+			console.warn("Player", player.id.ToString(), "disconnected:", error);
+			disconnectList.push(player);
+        }
 	});
 	processor.addHandler("server_closed", async (param, dataID, workerID) => {
-
+		if (error) {
+			console.warn("Player", player.id.ToString(), "disconnected:", error);
+        }
+		disconnectList.push(player);
 	});
 	processor.addHandler("post_watcher_message", async (param, dataID, workerID) => {
+		const {
+			player,
+			message
+		} = param;
+		player.ygopro.sendMessage(player, "CTOS_CHAT", {
+			msg: message
+		});
 
 	});
 	processor.addHandler("get_bad_ip_count", async (param, dataID, workerID) => {
